@@ -1,92 +1,75 @@
+use std::collections::HashMap;
 
+fn print_user_data_unsafe_implementation(user_data:&[u32], len:usize){
 
-mod library { // <- barely resemples a namespace
-
-	#[derive(Debug)] // <- Automagically implements the fmt::Debug trait to format the data for debugging purposes
-	enum Format {
-		Epub(u32), // <- those are variants
-		Pdf(u32),
-		Paper(u64)
-	}
-
-	#[derive(Debug)]
-	pub enum Book {
-		Ebook{
-			title: String,
-			author: String,
-			format: Format,
-		},
-		Physical{
-			title: String,
-			author: String,
-			format: Format,
-			weight_g: u16,
+    for n in 0..len {
+		unsafe{
+			let raw_ptr = (&user_data[0] as *const u32).add(n);
+			println!("{:?}", *raw_ptr);
 		}
-	}
-
-
-  pub struct Library{
-    byId:
-  }
-
-	// impl blocks allow us to add behaviour to enums and structs
-	impl Book {
-
-		pub fn new_physical_book(title: String, author:String, n_pages:u64, weight_g: u16) -> Self {
-
-			// Doesn't it look like javascript?
-			Book::Physical{
-				author,
-				title,
-				format: Format::Paper(n_pages),
-				weight_g,
-			}
-		}
-
-		pub fn new_pdf_ebook(title: &str, author:&str, size_ki_b: u32) -> Self {
-			Self::new_ebook(title, author, Format::Pdf(size_ki_b))
-		}
-
-		pub fn new_epub_ebook(title: &str, author:&str,size_ki_b: u32) -> Self {
-			Self::new_ebook(title, author, Format::Epub(size_ki_b))
-		}
-
-		fn new_ebook(title: &str, author:&str, format:Format) -> Self {
-			match format {
-				Format::Epub(_) | Format::Pdf(_) => Book::Ebook{title:title.to_owned(), author:author.to_owned(), format},
-				_ => panic!("Invalid format"),
-			}
-		}
-
-	}
+    }
 }
 
+fn print_user_data_safe_implementation(user_data:&[u32], len:usize){
 
-use crate::library::Book;
+    for n in 0..len {
+        println!("{:?}", user_data[n]);
+    }
+}
+
+fn print_user_data(user_data:&[u32], len:usize){
+
+	print_user_data_safe_implementation(user_data, len);
+	//print_user_data_unsafe_implementation(user_data, len);
+}
+
+// Struct with a reference without lifetimes
+#[derive(Hash, PartialEq, Eq)]
+struct User<'a> {
+	name: &'a str,
+}
+
 
 fn main() {
+	let user_1_name  = String::from("Meg");
+	let user_2_name = "Eve(Admin)";
+	let user_3_name  = user_1_name.clone();
+
+    let user_1 = User { name: &user_1_name };
+    let user_2 = User { name: &user_2_name };
+	let user_3 = User { name: &user_3_name };
 
 
-	let title = "Nacidos para aprender";
-	let author = "Fernando Alonso Martín";
-	let book = Book::new_epub_ebook(title,
-						   										author,
-																	40*1_024);
+	let mut database = HashMap::<&str, &[u32]>::default() ;  // Initialization required
+	database.insert(user_1.name, &[1,2,3,4,5]); // Immutable by default
+	database.insert(user_2.name, &[42,43,44,45,46,47,48]);
 
-	// deriving Debug trait enables us to print a Book
-	// as you would print a javascript object using console.log()
-	println!("{:?}", book);
-}
+	// Option<T> can be determined to be Some(T) or None
+	match database.get(user_1.name) {
+		Some(user_data) => {
+				println!("Printing {}'s data", user_1.name);
+				print_user_data(user_data, 20)
+		}, // Containers are bound-checked
+		None => panic!("User not found"), // Patterns must be exhaustively covered!
+	}
+
+	println!("{}", user_3.name);
 
 
-#[cfg(test)]
-mod test{
+	// Result<T, Err> can be verified to be Ok(T) or Err
+	match database.try_reserve(500) {
+		Ok(()) => (),
+		Err(_) => panic!("Cannot reserve additional database records"),
+	}
 
-	use super::*;
-
-	#[test]
-	fn test_a (){
-		assert!(true);
+	// Dirty things must be inside an unsafe block
+	let x = 42;
+	unsafe {
+		// Example: dereferencing a raw pointer
+		let raw_ptr = &x as *const i32;
+		println!("Unsafe dereference: {}", *(raw_ptr.add(1)));
 	}
 
 }
+
+
