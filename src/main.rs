@@ -63,3 +63,15 @@ fn print_user_data_unsafe_implementation(user_data:&[u32], len:usize){
 		}
     }
 }
+
+#[cfg(test)]
+mod tests{
+	use super::*;
+
+	#[test]
+	#[should_panic]
+	fn test_heartbleed() {
+		let user_data = [76,32,43,54];
+		print_user_data_safe_implementation(&user_data, user_data.len() + 1);
+	}
+}
